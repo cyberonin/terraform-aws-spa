@@ -24,7 +24,7 @@ variable "label_app" {
 }
 
 variable "domain_names" {
-  type = list
+  type = list(any)
 }
 
 variable "acm_certificate_arn" {
@@ -37,5 +37,5 @@ variable "distribution_price_class" {
   default     = "PriceClass_100"
 }
 
-variable "tag_project" {}
-variable "tag_environment" {}
+# variable "tag_project" {}
+# variable "tag_environment" {}
