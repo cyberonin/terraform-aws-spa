@@ -37,5 +37,18 @@ variable "distribution_price_class" {
   default     = "PriceClass_100"
 }
 
-# variable "tag_project" {}
-# variable "tag_environment" {}
+variable "basic_auth_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "username" {
+  type    = string
+  default = ""
+}
+
+variable "password" {
+  type    = string
+  default = ""
+}
+
