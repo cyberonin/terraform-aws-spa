@@ -88,6 +88,8 @@ resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
     forwarded_values {
       query_string = var.basic_auth_enabled ? true : false
 
+      headers = var.basic_auth_enabled ? ["Authorization"] : []
+
       cookies {
         forward = var.basic_auth_enabled ? "all" : "none"
       }
