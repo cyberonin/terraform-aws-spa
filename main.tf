@@ -1,8 +1,8 @@
 # cyo-prod-fontend-spa
 
 locals {
-  name      = "${var.label_namespace}-${var.label_env}-${var.label_app}-spa"
-  origin_id = "${var.label_namespace}-${var.label_env}-${var.label_app}-spa-origin-id"
+  name      = "${var.label_namespace}-${var.label_env}-${var.label_app}-"
+  origin_id = "${var.label_namespace}-${var.label_env}-${var.label_app}-origin-id"
 }
 
 resource "aws_cloudfront_origin_access_identity" "spa_origin_access_identity" {}
@@ -75,7 +75,7 @@ resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
 
 
   default_cache_behavior {
-    viewer_protocol_policy = "redirect-to-https"
+    viewer_protocol_policy = var.distribution_viewer_protocal_policy
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = local.origin_id

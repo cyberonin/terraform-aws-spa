@@ -37,6 +37,12 @@ variable "distribution_price_class" {
   default     = "PriceClass_100"
 }
 
+variable "distribution_viewer_protocal_policy" {
+  type        = string
+  description = "allow-all, https-only, or redirect-to-https"
+  default     = "redirect-to-https"
+}
+
 variable "basic_auth_enabled" {
   type    = bool
   default = false
