@@ -1,7 +1,7 @@
 # cyo-prod-fontend-spa
 
 locals {
-  name      = "${var.label_namespace}-${var.label_env}-${var.label_app}-"
+  name      = "${var.label_namespace}-${var.label_env}-${var.label_app}"
   origin_id = "${var.label_namespace}-${var.label_env}-${var.label_app}-origin-id"
 }
 
