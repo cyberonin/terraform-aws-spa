@@ -1,16 +1,3 @@
-variable "aws_region" {
-  type = string
-}
-
-variable "aws_profile" {
-  type = string
-}
-
-variable "aws_shared_credentials_file" {
-  type    = string
-  default = "~/.aws/credentials"
-}
-
 variable "label_namespace" {
   type = string
 }

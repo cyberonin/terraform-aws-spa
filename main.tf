@@ -9,7 +9,6 @@ resource "aws_cloudfront_origin_access_identity" "spa_origin_access_identity" {}
 
 resource "aws_s3_bucket" "spa_bucket" {
   bucket        = "${local.name}-bucket"
-  acl           = "private"
   force_destroy = true
 
   lifecycle {
@@ -21,6 +20,11 @@ resource "aws_s3_bucket" "spa_bucket" {
     "Environment" = "${var.label_env}"
     "Name"        = "${local.name}-bucket"
   }
+}
+
+resource "aws_s3_bucket_acl" "spa_bucket_acl" {
+  bucket = aws_s3_bucket.spa_bucket.id
+  acl    = "private"
 }
 
 data "aws_iam_policy_document" "spa_s3_policy" {
@@ -144,7 +148,6 @@ resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
 resource "aws_iam_role" "basic_auth_function_role" {
   count    = var.basic_auth_enabled ? 1 : 0
   name     = "${local.name}-basic-auth-function-role"
-  provider = aws.us_east_1
 
   assume_role_policy = <<EOF
 {
@@ -177,14 +180,12 @@ EOF
 # resource "aws_iam_role" "basic_auth_function_role" {
 #   name               = "${local.name}-basic-auth-function-role"
 #   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
-#   provider           = aws.us_east_1
 # }
 
 resource "aws_iam_role_policy" "basic_auth_function_role_policy" {
   count    = var.basic_auth_enabled ? 1 : 0
   name     = "${local.name}-basic-auth-function-role-policy"
   role     = aws_iam_role.basic_auth_function_role[0].id
-  provider = aws.us_east_1
 
   policy = <<EOF
 {
@@ -203,14 +204,6 @@ resource "aws_iam_role_policy" "basic_auth_function_role_policy" {
 }
 EOF
 }
-
-provider "aws" {
-  alias                   = "us_east_1"
-  region                  = "us-east-1"
-  profile                 = var.aws_profile
-  shared_credentials_file = var.aws_shared_credentials_file
-}
-
 
 data "template_file" "basic_auth_function" {
   template = file("${path.module}/basic-auth.js")
@@ -239,7 +232,6 @@ resource "aws_lambda_function" "basic_auth_function" {
   source_code_hash = data.archive_file.basic_auth_function_zip.output_base64sha256
   runtime          = "nodejs14.x"
   publish          = true
-  provider         = aws.us_east_1
 }
 
 resource "time_sleep" "wait_30_seconds" {
