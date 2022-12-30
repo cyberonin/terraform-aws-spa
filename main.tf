@@ -22,6 +22,13 @@ resource "aws_s3_bucket" "spa_bucket" {
   }
 
   tags = local.tags
+
+  # cors_rule {
+  #   allowed_headers = ["*"]
+  #   allowed_methods = ["GET", "HEAD"]
+  #   allowed_origins = ["*"]
+  #   expose_headers  = ["ETag"]
+  # }
 }
 
 resource "aws_s3_bucket_acl" "spa_bucket_acl" {
@@ -31,22 +38,20 @@ resource "aws_s3_bucket_acl" "spa_bucket_acl" {
 
 data "aws_iam_policy_document" "spa_s3_policy" {
   statement {
-    actions   = ["s3:GetObject"]
+    sid       = "AllowCloudFrontServicePrincipal"
+    effect    = "Allow"
     resources = ["${aws_s3_bucket.spa_bucket.arn}/*"]
+    actions   = ["s3:GetObject"]
 
-    principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.spa_origin_access_identity.iam_arn]
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = ["${aws_cloudfront_distribution.spa_cloudfront_distribution.arn}"]
     }
-  }
-
-  statement {
-    actions   = ["s3:ListBucket"]
-    resources = [aws_s3_bucket.spa_bucket.arn]
 
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.spa_origin_access_identity.iam_arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
   }
 }
@@ -54,6 +59,27 @@ data "aws_iam_policy_document" "spa_s3_policy" {
 resource "aws_s3_bucket_policy" "spa_bucket_policy" {
   bucket = aws_s3_bucket.spa_bucket.id
   policy = data.aws_iam_policy_document.spa_s3_policy.json
+}
+
+
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
+data "aws_cloudfront_origin_request_policy" "cors_s3_origin" {
+  name = "Managed-CORS-S3Origin"
+}
+
+data "aws_cloudfront_response_headers_policy" "security_headers_policy" {
+  name = "Managed-CORS-with-preflight-and-SecurityHeadersPolicy"
+}
+
+resource "aws_cloudfront_origin_access_control" "spa_cloudfront_origin_access_control" {
+  name                              = local.origin_id
+  description                       = local.origin_id
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
@@ -64,12 +90,13 @@ resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
   comment = "${local.name}-cf-dist"
 
   origin {
-    domain_name = aws_s3_bucket.spa_bucket.bucket_regional_domain_name
-    origin_id   = local.origin_id
+    domain_name              = aws_s3_bucket.spa_bucket.bucket_regional_domain_name
+    origin_id                = local.origin_id
+    origin_access_control_id = aws_cloudfront_origin_access_control.spa_cloudfront_origin_access_control.id
 
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.spa_origin_access_identity.cloudfront_access_identity_path
-    }
+    # s3_origin_config {
+    #   origin_access_identity = aws_cloudfront_origin_access_identity.spa_origin_access_identity.cloudfront_access_identity_path
+    # }
   }
 
   enabled             = true
@@ -81,19 +108,14 @@ resource "aws_cloudfront_distribution" "spa_cloudfront_distribution" {
 
 
   default_cache_behavior {
-    viewer_protocol_policy = var.distribution_viewer_protocal_policy
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = local.origin_id
-    compress               = true
-
-    forwarded_values {
-      query_string = false
-
-      cookies {
-        forward = "none"
-      }
-    }
+    viewer_protocol_policy     = var.distribution_viewer_protocal_policy
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = local.origin_id
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.cors_s3_origin.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers_policy.id
   }
 
   custom_error_response {
