@@ -31,6 +31,13 @@ resource "aws_s3_bucket" "spa_bucket" {
   # }
 }
 
+resource "aws_s3_bucket_ownership_controls" "spa_bucket_ownership_controls" {
+  bucket = aws_s3_bucket.spa_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "spa_bucket_acl" {
   bucket = aws_s3_bucket.spa_bucket.id
   acl    = "private"
