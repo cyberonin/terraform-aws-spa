@@ -39,6 +39,7 @@ resource "aws_s3_bucket_ownership_controls" "spa_bucket_ownership_controls" {
 }
 
 resource "aws_s3_bucket_acl" "spa_bucket_acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.spa_bucket_ownership_controls]
   bucket = aws_s3_bucket.spa_bucket.id
   acl    = "private"
 }
